@@ -1,7 +1,62 @@
 from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import UserCreationForm
 from .models import Room, Topic
 from .forms import RoomForm
+
+def loginPage(request):
+
+    page = 'login'
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    if request.method == 'POST':
+        username = request.POST.get('username').lower()
+        password = request.POST.get('password')
+
+        #check if user exists
+        try:
+            user = User.objects.get(username=username)
+        except:
+            messages.error(request, 'User does not exist')
+        
+        #authenticate user
+        user = authenticate(request, username=username, password=password)
+
+
+        if user is not None:
+            login(request, user)
+            return redirect('home')
+        else:
+            messages.error(request, 'Username or Password does not exist')
+
+    context = {'page':page}
+    return render(request, 'baseApp/login_register.html', context)
+
+def logoutUser(request):
+    logout(request)
+    return redirect('home')
+
+def registerPage(request):
+    form = UserCreationForm()
+
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False) # commit = False freezes data so we can clean up below
+            user.username = user.username.lower() #make all username letters lowercase
+            user.save
+            login(request, user)
+            return redirect('home')
+        else:
+            messages.error(request, "An error occurred during registration")
+
+    return render(request, 'baseApp/login_register.html', {'form':form})
 
 def home(request):
 
@@ -29,8 +84,12 @@ def room(request, pk):
 
     return render(request, 'baseApp/room.html', context)
 
+@login_required(login_url='login') #prohibits access to createroom if not a user, redirects to login page if not user
 def createRoom(request):
     form = RoomForm()
+
+
+
     if request.method == 'POST':
         form = RoomForm(request.POST) #passes all values into the form
         if form.is_valid(): #checks that everything is valid (types)
@@ -39,9 +98,13 @@ def createRoom(request):
     context = {'form':form}
     return render(request, 'baseApp/room_form.html', context)
 
+@login_required(login_url='login')
 def updateRoom(request, pk):
     room = Room.objects.get(id=pk)
     form = RoomForm(instance=room)
+
+    if request.user != room.host:
+        return HttpResponse('You are not allowed here!!')
 
     if request.method == 'POST':
         form = RoomForm(request.POST, instance=room)
@@ -52,8 +115,13 @@ def updateRoom(request, pk):
     context = {'form':form}
     return render(request, 'baseApp/room_form.html', context)
 
+@login_required(login_url='login')
 def deleteRoom(request, pk):
     room = Room.objects.get(id=pk)
+
+    if request.user != room.host:
+        return HttpResponse('You are not allowed here!!')
+
     if request.method == 'POST':
         room.delete()
         return redirect('home')
