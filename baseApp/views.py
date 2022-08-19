@@ -1,10 +1,25 @@
 from django.shortcuts import render, redirect
-from .models import Room
+from django.db.models import Q
+from .models import Room, Topic
 from .forms import RoomForm
 
 def home(request):
-    rooms = Room.objects.all() #objects is used to query database table
-    context = {'rooms': rooms} # key is variable used in for loop, pair is list
+
+    #for search functionality on home page
+    q = request.GET.get('q') if request.GET.get('q') != None else ''
+
+    #objects is used to query Room model, filter filters to rooms where topic name contains (i requires
+    #allows lowercase) q which is the get request
+    rooms = Room.objects.filter(
+        Q(topic__name__icontains=q) |
+        Q(name__icontains=q) |
+        Q(description__contains=q)
+        ) #objects is used to query database table, Q is imported from db.models, allows searching by multiple parameters
+
+    topics = Topic.objects.all()
+    room_count = rooms.count()
+
+    context = {'rooms': rooms, 'topics': topics, 'room_count':room_count} # key is variable used in for loop, pair is list
     return render(request, 'baseApp/home.html', context) # passing context in makes it available in home.html
 
 def room(request, pk):
