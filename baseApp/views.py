@@ -73,8 +73,9 @@ def home(request):
 
     topics = Topic.objects.all()
     room_count = rooms.count()
+    room_messages = Message.objects.filter(Q(room__topic__name__icontains=q)) #filter activity feed based on search function on topics
 
-    context = {'rooms': rooms, 'topics': topics, 'room_count':room_count} # key is variable used in for loop, pair is list
+    context = {'rooms': rooms, 'topics': topics, 'room_count':room_count, 'room_messages':room_messages} # key is variable used in for loop, pair is list
     return render(request, 'baseApp/home.html', context) # passing context in makes it available in home.html
 
 def room(request, pk):

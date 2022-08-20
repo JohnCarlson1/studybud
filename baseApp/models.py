@@ -27,12 +27,16 @@ class Room(models.Model):
         return self.name
 
 class Message(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey( User, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     # ^^^ establishes connection with Room where foreign key is room
     body = models.TextField()
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-updated', '-created'] #orders rooms by updated and created fields
+        # - means pull in latest update
 
     def __str__(self):
         return self.body[0:50] # function to reference the first 50 chars of body
