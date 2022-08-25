@@ -102,6 +102,7 @@ def userProfile(request, pk):
     context = {'user':user, 'rooms':rooms, 'room_messages': room_messages, 'topics':topics}
     return render(request, 'baseApp/profile.html', context)
 
+
 @login_required(login_url='login') #prohibits access to createroom if not a user, redirects to login page if not user
 def createRoom(request):
     form = RoomForm()
@@ -109,10 +110,13 @@ def createRoom(request):
     if request.method == 'POST':
         form = RoomForm(request.POST) #passes all values into the form
         if form.is_valid(): #checks that everything is valid (types)
+            room = form.save(commit=False) # gives us an instance of room without committing change
+            room.host = request.user 
             form.save() #saves to model
             return redirect('home')
     context = {'form':form}
     return render(request, 'baseApp/room_form.html', context)
+
 
 @login_required(login_url='login')
 def updateRoom(request, pk):
